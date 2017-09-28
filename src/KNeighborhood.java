@@ -69,8 +69,12 @@ public class KNeighborhood {
 
     public static class LetterScoreReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
         private Configuration conf;
+        private Map<String, Integer> letterOccurances;
 
-
+        public void setup(Context context) throws IOException, InterruptedException {
+            conf = context.getConfiguration();
+            letterOccurances = new TreeMap<>();
+        }
 
         public void reduce(Text key, Iterable<IntWritable> values, Context context)
                 throws IOException, InterruptedException {
@@ -78,10 +82,47 @@ public class KNeighborhood {
             for (IntWritable val : values) {
                 sum += val.get();
             }
-
-            context.write(key, new IntWritable(sum));
+            letterOccurances.put(key.toString(), sum);
         }
 
+        public void cleanup(Context context) throws IOException, InterruptedException {
+            long totalCharacters = 0;
+            for (Integer val : letterOccurances.values()) {
+                totalCharacters += val;
+            }
+
+            Integer[] letterScore = new Integer[NUM_CHARACTERS];
+            for (int i = 0; i < NUM_CHARACTERS; i++) {
+                Character letter = (char) (i + ASCII_START_A);
+                float letterOccurance = (float) letterOccurances.get(letter.toString());
+                Float percentageOccurrence = letterOccurance / (float) totalCharacters * 100.0F;
+
+                int scoreForLetter = 0;
+                if (percentageOccurrence > 10.0) {
+                    scoreForLetter = 0;
+                } else if (percentageOccurrence >= 8.0 && percentageOccurrence < 10.0) {
+                    scoreForLetter = 1;
+                } else if (percentageOccurrence >= 6.0 && percentageOccurrence < 8.0) {
+                    scoreForLetter = 2;
+                } else if (percentageOccurrence >= 4.0 && percentageOccurrence < 6.0) {
+                    scoreForLetter = 4;
+                } else if (percentageOccurrence >= 2.0 && percentageOccurrence < 4.0) {
+                    scoreForLetter = 8;
+                } else if (percentageOccurrence >= 1.0 && percentageOccurrence < 2.0) {
+                    scoreForLetter = 16;
+                } else if (percentageOccurrence < 1.0) {
+                    scoreForLetter = 32;
+                }
+
+                letterScore[i] = scoreForLetter;
+            }
+
+            for (int i = 0; i < NUM_CHARACTERS; i++) {
+                Character letter = (char) (i + ASCII_START_A);
+                Integer val = letterScore[i];
+                context.write(new Text(letter.toString()), new IntWritable(val));
+            }
+        }
     }
 
 
