@@ -1,3 +1,7 @@
+ifndef NEIGHBORS
+NEIGHBORS=2
+endif
+
 build: clean
 	mkdir _build
 	mkdir target
@@ -6,15 +10,15 @@ build: clean
 	rm -rf ./_build
 
 run:
-	hadoop jar ./target/KNeighborhood.jar org.myorg.KNeighborhood $(INPUT) $(OUTPUT)
+	hadoop jar ./target/KNeighborhood.jar org.myorg.KNeighborhood $(INPUT) $(OUTPUT) $(NEIGHBORS)
 
 clean:
 	rm -rf ./target
-	rm -rf ./_build
-
-gunzip:
-	gunzip -q ./input/books/*
+	rm -rf ./build
 
 gzip:
-	gzip -q ./input/books/*
+	-gzip -q ./input/books/*
+
+gunzip:
+	-gunzip -q ./input/books/*
 
